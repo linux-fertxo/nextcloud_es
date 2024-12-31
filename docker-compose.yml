@@ -1,0 +1,70 @@
+#============================================================================= REDES
+networks:
+  proxy:
+    external: true                                                            # Definida en el stack de traefik.
+  nextcloud:
+    name: nextcloud
+
+#============================================================================= SERVICIOS
+services:
+  #--------------------------------------------------------------------------- Nextcloud
+  nextcloud:
+    image: linuxserver/nextcloud:latest
+    container_name: nextcloud
+    hostname: nextcloud
+    restart: unless-stopped
+    networks:
+      - nextcloud
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ                                                                # Listado de zonas: https://www.joda.org/joda-time/timezones.html
+      - REDIS_HOST=nextcloud-redis
+      - NEXTCLOUD_TRUSTED_DOMAIN=cloud.$DOMAINNAME
+      - TRUSTED_PROXIES=172.x.y.z/16                                          # Subred de traefik (proxy). Ajustar según sea necesario.
+    volumes:
+      - $DOCKERDIR/nextcloud/config:/config
+      - $DOCKERDIR/nextcloud/data:/data
+      - /OTRAS/CARPETAS:/srv/EJEMPLO                                          # Podemos agregar más carpetas. Ver README.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.nextcloud-rtr.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud-rtr.rule=Host(`nextcloud.$DOMAINNAME`)"
+      - "traefik.http.routers.nextcloud-rtr.tls=true"
+      - "traefik.http.routers.nextcloud-rtr.middlewares=chain-nextcloud@file" # En Traefik hay una cadena específica para Nextcloud
+      - "traefik.http.routers.nextcloud-rtr.service=nextcloud-svc"
+      - "traefik.http.services.nextcloud-svc.loadbalancer.server.scheme=https"
+      - "traefik.http.services.nextcloud-svc.loadbalancer.server.port=443"
+  
+  #--------------------------------------------------------------------------- MariaDB
+  nextcloud-db:
+    image: mariadb:11.4                                                       # En el momento de escribir esto, esta es la máxima versión compatible con Nextcloud.
+    container_name: nextcloud-db
+    hostname: nextcloud-db
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --log-bin=msqyld-bin --binlog-format=ROW --skip-innodb-read-only-compressed
+    networks:
+      - nextcloud
+    environment:
+      - MYSQL_USER=nextcloud
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_ROOT_PASSWORD=$DB_ROOT_PASSWORD                                 # Contraseña de root de la base de datos.
+      - MYSQL_PASSWORD=$DB_PASSWORD                                           # Contraseña de usuario de la base de datos.
+    volumes:
+      - $DOCKERDIR/nextcloud/mariadb:/var/lib/mysql
+
+  #--------------------------------------------------------------------------- Redis
+  nextcloud-redis:
+    image: redis:6.2-alpine
+    container_name: nextcloud-redis
+    hostname: nextcloud-redis
+    restart: unless-stopped
+    networks:
+      - nextcloud
+    volumes:
+      - $DOCKERDIR/nextcloud/redis/data:/data
+      - $DOCKERDIR/nextcloud/redis/sysctl.conf:/etc/sysctl.conf               # vm.overcommit_memory = 1
