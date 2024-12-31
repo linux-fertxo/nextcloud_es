@@ -1,143 +1,143 @@
 <h1>
   <p align="center" width="100%">
-	<img width="44%" src="../.recursos/img/logos/nextcloud.png">
-	</br>
-	  Nextcloud
+    <img width="44%" src=".recursos/img/nextcloud.png">
+    </br>
+    Nextcloud
   </p> 
 </h1>
 
 <h2> 
   <p align="center" width="100%">
-  	A self-hosted cloud storage combined with a collaborative office suite.
+    Un nube de almacenamiento personal combinada con una suite de ofimática colaborativa.
   </p>
 </h2>
 
-[![Static Badge](https://img.shields.io/badge/lang-%F0%9F%87%AA%F0%9F%87%B8_es-blue?style=plastic)](README.es.md)
-
 <h3> 
   <p align="left" width="100%">
-	  Based on the <a href="https://nextcloud.com">Nextcloud</a> suite and containerized by <a href="https://linuxserver.io">Linuxserver.io</a>
-  </p>
+    Basado en la suite de <a href="https://nextcloud.com">Nextcloud</a> y contenerizado por <a href="https://linuxserver.io">Linuxserver.io</a>
 </h3>
+
+<!-- [![Static Badge](https://img.shields.io/badge/lang-%F0%9F%87%AC%F0%9F%87%A7_en-blue?style=plastic)](README.md) -->
 
 <h3>
-  Content:
+  Contenido:
 </h3>
 
-- [Structure](#structure)
-- [Description](#description)
-  - [*Other remarks*](#other-remarks)
-  - [*Environment Variables*](#environment-variables)
-  - [*Before starting*](#before-starting)
-- [Starting the container and initial configuration](#starting-the-container-and-initial-configuration)
+- [Estructura](#estructura)
+- [Descripción](#descripción)
+  - [*Otras observaciones*](#otras-observaciones)
+  - [*Variables de entorno*](#variables-de-entorno)
+  - [*Antes de empezar*](#antes-de-empezar)
+- [Arranque del contenedor y configuración inicial](#arranque-del-contenedor-y-configuración-inicial)
 
-## Structure
+## Estructura
 
     nextcloud/
-      ├─ docker-compose.yml               → dockerfile
-      ├─ .env                             → environment variables
-      ├─ data/                            → Nextcloud data folder
-      ├─ mariadb/                         → MariaDB data folder (database)
+      ├─ docker-compose.yml               → archivo docker
+      ├─ .env                             → variables de entorno
+      ├─ data/                            → carpeta de datos de Nextcloud
+      ├─ mariadb/                         → carpeta de datos de MariaDB (base de datos)
       ├─ config/
       │    └─ log/
-      │          └─ nginx/                → nginx logs (see below)
+      │         └─ nginx/                 → logs de nginx (ver más adelante)
       └─ redis/
-           └─ sysctl.conf                 → redis configuration (see below)
+           └─ sysctl.conf                 → configuración de redis (ver más adelante)
 
-## Description
+## Descripción
 
-The `docker-compose.yml` and `.env` files, as always, need no introduction. These are the files that contain all the instructions and variables to create the Nextcloud container.
+Los archivos `docker-compose.yml` y `.env` como siempre no necesitan presentación, son los archivos que contienen todas las instrucciones y variables para crear el contenedor de Nextcloud.
 
-The `data/` folder will be created in the first run and will hold the application data once it's running. We don't need to create it manually. Among all the data, a `nextcloud.log` file will be generated which we will then pass to `crowdsec` (see in the [dedicated section](../crowdsec/)).
+La carpeta `data/` se creará junto al primer arranque del contenedor y mantendrá los datos de la aplicación una vez en marcha. No necesitamos crearla manualmente. Entre todos los datos se generará un archivo `nextcloud.log` que luego podremos pasar a `crowdsec` (ver en el contenedor dedicado).
 
-The `mariadb/` folder, like the previous one, will be generated during the first run. It will hold the relational database on which this Nextcloud implementation relies. There are other databases that could be used, but this is the most common one for a non-intensive use (SQLite falls short and PostgreSQL is too much).
+La carpeta `mariadb/` al igual que la anterior se creará por si sola durante el primer arranque. Mantendrá la base de datos relacional en la que se apoya esta implementación de Nextcloud. Existen otras bases de datos que podrían usarse, pero esta es la más común para un uso no intensivo.
 
-The `config/` folder is another folder where we don't have to do anything. The only reason it's mapped here to a physical folder on the server is for having access to the Nginx logs, so they will be available for `crowdsec` (see in the [dedicated section](../crowdsec/)).
+La carpeta `config/` es otra carpeta en la que no tenemos que hacer nada. El único motivo por el que se mapea a una carpeta del servidor es para tener acceso a la carpeta de logs de Nginx, y así estarán disponibles para ser leídos por `crowdsec` (ver en la [sección dedicada](../crowdsec/)).
 
-Finally, the `redis/` folder contains the `sysctl.conf` configuration file, whose sole purpose is to add a line of code to prevent in a supposed low memory scenario from causing a failure in the dump of the data. As with the rest of the folders of this service, its inclusion is optional.
+Por último, la carpeta `redis/` contiene el archivo de configuración `sysctl.conf` cuyo único propósito es añadir una línea de código para evitar que en un supuesto escenario de baja memoria se produzca un fallo en el volcado de los datos de la misma. Al igual que el resto de carpetas de éste servicio su inclusión es opcional.
 
->**In brief:**
->* **The entire folder structure is completely optional**. We can run Nextcloud without creating any mount points on the host system.
->* These mount points have only been added for easier access to logs and certain configuration files. But **most cases won't require it.**
+En resumen:
 
-### *Other remarks*
+  * **Toda la estructura de carpetas es completamente opcional**. Podemos poner Nextcloud en servicio sin necesidad de crear ningún punto de montaje al sistema anfitrión.
+  
+  * Sólo se han añadido dichos puntos de montaje para tener un acceso más fácil a los registros y a ciertos archivos de configuración puntuales. La mayoría de casos no necesitan de ello.
 
-Within `docker-compose.yml` a few clarifications:
+### *Otras observaciones*
 
-* In `environment:` section you have to manually set `TRUSTED_PROXIES` to the `proxy` network address. The network was created during the configuration of [Traefik](../traefik/README.md). You can find out by running the following command:
+Dentro de `docker-compose.yml` hay que hacer un par de aclaraciones:
+
+  * En la sección `environment:` tenemos que ajustar manualmente `TRUSTED_PROXIES` con la dirección de la red `proxy`. La red fue creada durante la configuración de [Traefik](../traefik/README.md). Podemos ver el dato ejecutando lo siguiente:
 
 ```bash
 docker network inspect proxy | grep "Subnet"
 ```
->
 
-* Also in the Traefik container there is a [middleware](../traefik/rules/middlewares.yml) defined for the Nextcloud headers. You can check the configuration there and adjust it to your needs.
+  * También en el contenedor Traefik hay definido un [middleware](../traefik/rules/middlewares.yml) para las cabeceras de Nextcloud. Puedes consultar allí la configuración, o ajustarla a tus necesidades.
 
-* In `volumes:` section we can add all the folders we want, e.g. for using an external storage. They are generally mapped under the `/srv` or `/mnt` folders within the container. **In order to use those you will have to enable the "External Storage" plugin in Nextcloud.** It's installed by default, but disabled.
+  * En la sección `volumes:` podemos añadir todas las carpetas que queramos como por ejemplo un almacenamiento externo. Generalmente se mapean bajo las carpetas `/srv` o `/mnt` dentro del contenedor. **Para poder hacer uso de ellas tendremos que habilitar el plugin "Almacenamiento externo" dentro de Nextcloud.**
 
-Assumes that it will be accessible from outside our local network. Therefore, the corresponding CNAME must be generated in our DNS provider.
+Parte del supuesto de que va a ser accesible desde fuera de nuestra red local. Por lo tanto hay que generar el correspondiente CNAME en nuestro proovedor DNS.
 
-Relies on **MariaDB** for its database. Although it can be configured with SQLite, having a dedicated database works better in the long run.
+Se apoya en **MariaDB** para la base de datos. Aunque se puede configurar con SQLite, a la larga tener una base de datos dedicada da mejor resultado.
 
-Also relies on **Redis** to maintain the in-memory cache. I recommend it even for single-user environments because the performance improvement is noticeable.
+Se apoya en **Redis** para mantener la caché en memoria. Lo recomiendo incluso para entornos de un solo usuario porque la mejora de rendimiento es palpable.
 
-### *Environment Variables*
+### *Variables de entorno*
 
-* `PUID` and `PGID` are the user and group IDs in numeric format (run `id` to find them)
-* `TZ` is the time zone in `Continent/City` format. [List of zones](https://www.joda.org/joda-time/timezones.html)
-* `DOCKERDIR` is the root directory containing all Docker services.
-* `DOMAINNAME` is the name of our domain.
-* `DB_PASSWORD` and `DB_ROOT_PASSWORD` are the passwords required for MariaDB. Picking two good, strong passwords is essential.
+* `PUID` y `PGID` son los identificadores de usuario y grupo en formato numérico (ejecutar `id` para conocerlos)
+* `TZ` es la zona horaria en formato `Continente/Ciudad`. [Listado de zonas](https://www.joda.org/joda-time/timezones.html)
+* `DOCKERDIR` es el directorio que contiene todos los servicios de Docker.
+* `DOMAINNAME` es el nombre de nuestro dominio.
+* `DB_PASSWORD` y `DB_ROOT_PASSWORD` son las contraseñas necesarias para MariaDB. Elegir dos buenas contraseñas es importante.
 
-### *Before starting*
+### *Antes de empezar*
 
-* As explained above, this service is dependent on the `proxy` network to be accessed from outside. Set `TRUSTED_PROXIES` in `docker-compose.yml`.
+* Como se ha explicado anteriormente, este servicio es dependiente de la red `proxy` para acceder desde el exterior. Ajustar `TRUSTED_PROXIES` en `docker-compose.yml`.
 
-* Remember to create a CNAME record in the DNS provider. In `docker-compose.yml` it appears as `nextcloud.$DOMAINNAME`, although you can call it whatever you like.
+* Crear un registro CNAME en nuestro proovedor DNS. En `docker-compose.yml` aparece como `nextcloud.$DOMAINNAME`, aunque lo podemos llamar de la forma que prefiramos.
 
-* Create the `redis/` folder and the `sysctl.conf` file with its contents.
-  
-## Starting the container and initial configuration
+* Crear la carpeta `redis/` y el archivo `sysctl.conf` con su contenido.
+
+## Arranque del contenedor y configuración inicial
 
 ```bash
-docker compose up -d        → start Nextcloud in the background
+docker compose up -d       → arrancamos Nextcloud en segundo plano
 
-docker logs nextcloud -f    → examine the logs to see if there are any problems (CTRL+c to exit)
+docker logs nextcloud -f   → examinamos los registros para ver si hay algún problema (CTRL+c para salir)
 ```
 </br>
 
-In a browser, go to the address you have configured (`https://nextcloud.example.com`)
+En un navegador vamos a la dirección que hayamos configurado (`https://nextcloud.ejemplo.com`)
 
-The configuration wizard will be displayed, so:
+Se mostrará el asistente de configuración inicial. Para ello:
 
-1. Enter the name of the user who will be the admin.
-2. Enter the password.
-3. (Optional) Install the recommended applications now.
-4. Click on Storage and database.
+  1. Introducir el nombre del usuario que será administrador.
+  2. Introducir la contraseña.
+  3. (Opcional) Instalar las aplicaciones recomendadas ahora.
+  4. Hacer clik en Almacenamiento y base de datos.
 
 </br>
   <p align="center" width="100%">
-	<img width="33%" src="../.recursos/img/nextcloud/nextcloud_wizard_01.png">
+    <img width="33%" src=".recursos/img/capturas/nextcloud_wizard_01.png">
   </p>
 </br></br>
 
-1. Here we select the database we will use. In this case, **MariaDB**
-2. User: **`nextcloud`**
-3. Password: **`DB_PASSWORD`** (set in `.env`)
-4. Database name: **`nextcloud`**
-5. Host: **`nextcloud-db:3306`**
+  5. Seleccionar la base de datos que queramos utilizar. En este caso, **MariaDB**
+  6. Usuario: **`nextcloud`**
+  7. Contraseña: **`DB_PASSWORD`** (configurada en `.env`)
+  8. Nombre de la base de datos: **`nextcloud`**
+  9. Host: **`nextcloud-db:3306`**
 
   <p align="center" width="100%">
-	<img width="33%" src="../.recursos/img/nextcloud/nextcloud_wizard_02.png">
+    <img width="33%" src=".recursos/img/capturas/nextcloud_wizard_02.png">
   </p>
 </br></br>
 
-Log in with the credentials:
+Accedemos con las credenciales:
 
   <p align="center" width="100%">
-	<img width="33%" src="../.recursos/img/nextcloud/nextcloud_login.png">
+    <img width="33%" src=".recursos/img/capturas/nextcloud_login.png">
   </p>
-</br>
+
 <h3>
-Done! Now we have a self-hosted personal cloud with access to dozens of applications.
+¡Listo! Ya tenemos una nube personal con acceso a docenas de aplicaciones.
 </h3>
