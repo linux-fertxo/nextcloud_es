@@ -8,7 +8,7 @@
 
 <h2> 
   <p align="center" width="100%">
-    Un nube de almacenamiento personal combinada con una suite de ofimática colaborativa.
+    Un nube de almacenamiento personal combinada con una completa store de aplicaciones, ampliando enormemente su potencial.
   </p>
 </h2>
 
