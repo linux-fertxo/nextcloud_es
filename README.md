@@ -4,13 +4,14 @@
     </br>
     Nextcloud
   </p> 
+  <h2> 
+    <p align="center" width="100%">
+      Un nube de almacenamiento personal combinada con una completa store de aplicaciones, ampliando enormemente su potencial⁽¹⁾.
+    </p>
+  </h2>
 </h1>
 
-<h2> 
-  <p align="center" width="100%">
-    Un nube de almacenamiento personal combinada con una completa store de aplicaciones, ampliando enormemente su potencial.
-  </p>
-</h2>
+>⁽¹⁾ *Estoy buscando una forma sencilla de explicar la integración con Nextcloud Office. No me gusta la solución oficial de tener dos dominios distintos, pero creo que no me va a quedar otro remedio.* 
 
 <h3> 
   <p align="left" width="100%">
